@@ -1,0 +1,17 @@
+{
+  "name": "chocolatier",
+  "private": true,
+  "workspaces": [
+    "v2.2.0"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=v2.2.0",
+    "build": "npm run build --workspace=v2.2.0",
+    "test": "npm run test --workspace=v2.2.0",
+    "bot:train": "npm run bot:train --workspace=v2.2.0",
+    "party": "npm run party --workspace=v2.2.0",
+    "party:devkit": "npm run party:devkit --workspace=v2.2.0",
+    "party:deploy": "npm run party:deploy --workspace=v2.2.0",
+    "preview": "npm run preview --workspace=v2.2.0"
+  }
+}

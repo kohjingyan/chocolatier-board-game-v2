@@ -1,0 +1,5 @@
+{
+  "name": "chocolatier-playtest",
+  "main": "party/room.ts",
+  "compatibilityDate": "2024-09-23"
+}
