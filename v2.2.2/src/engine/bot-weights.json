@@ -1,0 +1,13 @@
+{
+  "bidCashFraction": 0.2772082794874906,
+  "bidOpening": 5.740361523032188,
+  "bidUtilityScale": 0.07136993227899074,
+  "bidMin": 4.037759852781892,
+  "bidTieBonus": 2.4678782541304827,
+  "denyWeight": 0.3148220389522612,
+  "schemeMargin": 3.723137906193733,
+  "pvMargin": 13.11559079527855,
+  "openMarketMargin": -0.6075900185108185,
+  "masteryMargin": 12.409542843699455,
+  "reliefMargin": 2.367525879740715
+}

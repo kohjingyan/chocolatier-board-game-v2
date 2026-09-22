@@ -1,0 +1,37 @@
+{
+  "name": "chocolatier-v2.2.1",
+  "private": true,
+  "version": "2.2.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "party": "vite-node scripts/local-room.ts",
+    "party:devkit": "partykit dev",
+    "party:deploy": "wrangler deploy",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "bot:train": "vite-node scripts/train-bots.ts",
+    "build:rulebook": "vite-node scripts/generate-rulebook-html.mjs && node scripts/build-rulebook.mjs"
+  },
+  "dependencies": {
+    "partyserver": "^0.0.73",
+    "partysocket": "^1.1.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/ws": "^8.5.10",
+    "@vitejs/plugin-react": "^4.3.4",
+    "partykit": "^0.0.111",
+    "puppeteer-core": "^21.11.0",
+    "typescript": "^5.4.5",
+    "vite": "^4.5.14",
+    "vite-node": "^0.34.6",
+    "vitest": "^0.34.6",
+    "wrangler": "^4.125.0",
+    "ws": "^8.18.0"
+  }
+}
