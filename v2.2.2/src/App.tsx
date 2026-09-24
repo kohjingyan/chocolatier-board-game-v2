@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import recipeIncomeChartImg from './assets/recipe-income.png'
 import { flushBots } from './engine/bot'
 import { HoverTip, IngredientsGuide, KindIcon, RecipeNeeds, cardTooltip, schemeTooltip } from './cards'
 import { HowToPlay } from './HowToPlay'
@@ -410,21 +411,207 @@ function handLine(cards: GameCard[]) {
   return cards.map((c) => c.name).join(', ')
 }
 
+function TitleBanner({
+  state,
+  onReset,
+  onHelp,
+}: {
+  state: GameState
+  onReset: () => void
+  onHelp: () => void
+}) {
+  return (
+    <div className="topbar">
+      <h1 style={{ marginLeft: '10px' }}>Chocolatier</h1>
+      
+      <div>
+        <i>Stage {state.stage} · Round {state.round}/8</i>
+      </div>
+
+      <div style={{ marginLeft: 'auto'}} className="status-chip">
+        <span className="num">{state.openCocoa}</span> cocoa &nbsp;·&nbsp;
+        <span className="num">{state.openSugar}</span> sugar
+      </div>
+
+      <div className="status-chip">
+        Scheme deck <span className="num">{state.schemeDeck.length}</span>
+      </div>
+
+      <div className="status-chip">
+        Masteries: {state.masteryMarket.map((c) => c.name).join(', ') || 'sold out'}
+      </div>
+
+      <div className="row" style={{ gap: '0.4rem' }}>
+        <RecipeIncomeChartButton />
+        <button
+          type="button"
+          onClick={onHelp}
+          style={{ padding: '0.55rem 0.9rem', textAlign: 'center', background: 'transparent', color: 'white', fontSize: '20px' }}
+        >
+          ?
+        </button>
+        <p><i className="fa fa-sign-out" aria-hidden="true" onClick={onReset} style={{ cursor: 'pointer', paddingRight: '20px' }}></i></p>
+      </div>
+    </div>
+  )
+}
+
+function RefTabButton({
+  label,
+  active,
+  onClick,
+}: {
+  label: string
+  active: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      className={active ? '' : 'secondary'}
+      onClick={onClick}
+      aria-pressed={active}
+    >
+      {label}
+    </button>
+  )
+}
+
+function ReferenceTools({ state, send }: { state: GameState; send: (a: Action) => void }) {
+  const [tab, setTab] = useState<'references' | 'developer'>('references')
+
+  return (
+    <div className="ref">
+      <div className="row" style={{ gap: '0.4rem', marginBottom: '0.7rem' }}>
+        <RefTabButton label="References" active={tab === 'references'} onClick={() => setTab('references')} />
+        <RefTabButton label="Developer" active={tab === 'developer'} onClick={() => setTab('developer')} />
+      </div>
+
+      {tab === 'references' ? (
+        <>
+          <SchemesReference />
+          <MasteriesReference />
+          <TrackReference />
+          <IngredientsReference state={state} />
+        </>
+      ) : (
+        <>
+          <div className="tiny light" style={{ marginBottom: '0.3rem' }}>
+            <b>Developer overrides</b> — tweak recipe income and card costs for this session.
+          </div>
+          <DevIncomeEditor state={state} send={send} />
+          <DevCostEditor state={state} send={send} />
+        </>
+      )}
+    </div>
+  )
+}
+
+function RecipeIncomeChartButton() {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <div>
+        <p onClick={() => setOpen(true)} style={{ cursor: 'pointer' }}><i className="fa-solid fa-book"></i></p>
+      </div>
+      {open && (
+        <div className="modal-back" onClick={() => setOpen(false)}>
+          <div
+            className="modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: 'min(1500px, 96vw)', maxHeight: '92vh', overflow: 'auto', padding: 0, background: 'transparent', boxShadow: 'none' }}
+          >
+            <div className="row" style={{ justifyContent: 'flex-end', padding: '0.5rem' }}>
+              <button type="button" onClick={() => setOpen(false)}>
+                X
+              </button>
+            </div>
+            <img
+              src={recipeIncomeChartImg}
+              alt="Recipe list with ingredients and income for every stage"
+              style={{ width: '100%', display: 'block', borderRadius: '10px' }}
+            />
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+function SchemesReference() {
+  return (
+    <details>
+      <summary>Schemes</summary>
+      {Object.entries(SCHEME_INFO)
+        .sort(([, a], [, b]) => a.name.localeCompare(b.name))
+        .map(([id, info]) => (
+          <div key={id} className="tiny light">
+            <b>{info.name}</b> ({info.playCost}) — {info.text}
+          </div>
+        ))}
+    </details>
+  )
+}
+
+function MasteriesReference() {
+  return (
+    <details>
+      <summary>Masteries</summary>
+      {Object.values(MASTERY_INFO).map((m) => (
+        <div key={m.name} className="tiny light">
+          <b>{m.name}</b> — {m.text}
+        </div>
+      ))}
+    </details>
+  )
+}
+
+function IngredientsReference({ state }: { state: GameState }) {
+  return (
+    <div className="ref-group">
+      <div className="ref-group-title">Ingredients</div>
+      <IngredientsGuide state={state} />
+      <RecipeReference state={state} />
+      <CardCatalog state={state} />
+    </div>
+  )
+}
+
+function HelpModal({
+  state,
+  send,
+  onClose,
+}: {
+  state: GameState
+  send: (a: Action) => void
+  onClose: () => void
+}) {
+  return (
+    <div className="modal-back" onClick={onClose}>
+      <div
+        className="modal panel"
+        onClick={(e) => e.stopPropagation()}
+        style={{ maxHeight: '85vh', overflow: 'auto', width: 'min(620px, 92vw)' }}
+      >
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <h2 style={{ margin: 0 }}>Reference & developer tools</h2>
+          <button type="button" className="secondary" onClick={onClose}>
+            Close
+          </button>
+        </div>
+        <p className="tiny" style={{ marginTop: '0.3rem' }}>
+          Everything you need to look up mid-game, in one place.
+        </p>
+        <ReferenceTools state={state} send={send} />
+      </div>
+    </div>
+  )
+}
+
 function PlayerRail({ state, selfId }: { state: GameState; selfId?: string | null }) {
   const actor = selfId ?? viewingPlayerId(state)
   return (
     <aside className="rail">
-      <div className="brand">The floor</div>
-      <h1>Chocolatier</h1>
-      <div className="meta">
-        Stage {state.stage} · Round {state.round}/8
-        <br />
-        Open market: {state.openCocoa} cocoa · {state.openSugar} sugar
-        <br />
-        Scheme deck: {state.schemeDeck.length}
-        <br />
-        Masteries: {state.masteryMarket.map((c) => c.name).join(', ') || 'sold out'}
-      </div>
       {state.players.map((p, i) => {
         const order = state.turnOrder.indexOf(p.id) + 1
         const mine = Boolean(selfId && p.id === selfId)
@@ -435,34 +622,39 @@ function PlayerRail({ state, selfId }: { state: GameState; selfId?: string | nul
                 {p.name} {p.isBot ? '· bot' : ''}
                 {mine ? ' · you' : ''}
               </b>
-              <span className="tag">{order > 0 ? `#${order}` : `Seat ${i + 1}`}</span>
+              <div className="corner-tag">{order > 0 ? `${order}` : `Seat ${i + 1}`}</div>
             </div>
             <div>
-              {money(visibleCash(state, p))} · Res {resP(p)} (L{resLevel(p)}) · Rep {repP(p)} (L{repLevel(p)})
+              <b style={{color: 'maroon' }}>{money(visibleCash(state, p))}</b> 🔬{resP(p)} (L{resLevel(p)}) ⭐{repP(p)} (L{repLevel(p)})
             </div>
             {mostReputableId(state) === p.id && <span className="title-chip">Most Reputable</span>}
-            {p.mastery && (
-              <HoverTip text={MASTERY_INFO[p.mastery].text}>
-                <div className="tiny">{MASTERY_INFO[p.mastery].name}</div>
-              </HoverTip>
-            )}
+            <div>
+              {p.mastery && (
+                <HoverTip text={MASTERY_INFO[p.mastery].text}>
+                  <div className="tiny">
+                    <b>Mastery</b>{' '}
+                    {MASTERY_INFO[p.mastery].name}</div>
+                </HoverTip>
+              )}
+            </div>
             <div className="tiny">
               <b>Supply</b>{' '}
               {p.supply.length > 0 ? p.supply.map((c) => c.name).join(', ') : 'empty'}
-            </div>
-            <div className="tiny" data-testid={mine ? 'own-rail-hand' : undefined}>
-              <b>{mine ? 'Your hand' : 'Hand'}</b> {handLine(p.hand)}
             </div>
             {mine && p.schemes.length > 0 && (
               <div className="tiny">
                 <b>Schemes</b> {p.schemes.map((c) => c.name).join(', ')}
               </div>
             )}
-            <div className="tiny">
+            <div className="recipes-owned">
               {p.factories.map((f) => (
-                <div key={f.id}>
-                  <b>{f.recipeId ? recipeById(f.recipeId).name : 'Idle factory'}</b>
-                  {f.ingredients.length > 0 ? ` — ${f.ingredients.map((c) => c.name).join(', ')}` : ''}
+                <div key={f.id} className='recipe-owned'>
+                  <span className='rname'>
+                    <b>{f.recipeId ? recipeById(f.recipeId).name : 'Idle factory'}</b>
+                  </span>
+                  <span className='ringr'>
+                    <i>{f.ingredients.length > 0 ? `${f.ingredients.map((c) => c.name).join(', ')}` : ''}</i>
+                  </span>
                 </div>
               ))}
             </div>
@@ -569,11 +761,14 @@ function RecipeProgress({
 }) {
   const players = state.players
   return (
-    <details className="recipe-board-wrap" open={players.length > 0} data-testid="recipe-board">
+    <div className="recipe-board-wrap" open={players.length > 0} data-testid="recipe-board">
       <summary>Recipe board</summary>
       <p className="tiny light">
-        A check means that player has developed the recipe (Reputation granted on Done assigning). The
-        gold name is who received the global +1 for introducing it first. Hover a recipe name for
+        Develop recipes to gain Reputation.
+        <br></br>
+        Introduce a recipe to gain extra +1 Reputation.
+        <br></br>
+        Hover a recipe name for
         ingredient icons (glow = you have it) and the Research level needed.
       </p>
       <div className="recipe-board-scroll">
@@ -583,10 +778,9 @@ function RecipeProgress({
               <th>Recipe</th>
               {players.map((p) => (
                 <th key={p.id} className={p.id === viewerId ? 'you-col' : undefined}>
-                  {p.id === viewerId ? 'You' : shortSeat(p.name)}
+                  {shortSeat(p.name)}
                 </th>
               ))}
-              <th>First +1</th>
             </tr>
           </thead>
           <tbody>
@@ -610,17 +804,14 @@ function RecipeProgress({
                       const made = p.completedRecipes.includes(r.id)
                       const intro = firstId === p.id
                       return (
-                        <td
-                          key={p.id}
-                          className={[intro ? 'first-plus' : '', p.id === viewerId ? 'you-col' : '']
+                        <td key={p.id}>
+                          <span className={[intro ? 'peg introduce' : made ? 'peg done' : 'peg', p.id === viewerId ? 'you-col' : '']
                             .filter(Boolean)
-                            .join(' ')}
-                        >
-                          {made ? (intro ? '✓+1' : '✓') : '·'}
+                            .join(' ')
+                          }></span>
                         </td>
                       )
                     })}
-                    <td className={first ? 'first-plus' : undefined}>{first ? first.name : '—'}</td>
                   </tr>
                 )
               }),
@@ -628,7 +819,7 @@ function RecipeProgress({
           </tbody>
         </table>
       </div>
-    </details>
+    </div>
   )
 }
 
@@ -975,12 +1166,10 @@ function ScoreBoard({ state, hideTable }: { state: GameState; hideTable?: boolea
 
 function LogRail({
   state,
-  onReset,
   send,
   viewerId,
 }: {
   state: GameState
-  onReset: () => void
   send: (a: Action) => void
   viewerId?: string | null
 }) {
@@ -988,9 +1177,6 @@ function LogRail({
     <aside className="log-rail">
       <div className="row">
         <h3>Ledger</h3>
-        <button type="button" className="secondary" onClick={onReset}>
-          New game
-        </button>
       </div>
       {state.effects.length > 0 && (
         <div className="tiny light" style={{ marginBottom: '0.6rem' }}>
@@ -1010,33 +1196,7 @@ function LogRail({
           <div key={e.id}>{e.text}</div>
         ))}
       </div>
-          <div className="ref">
-        <DevIncomeEditor state={state} send={send} />
-        <DevCostEditor state={state} send={send} />
-        <RecipeProgress state={state} viewerId={viewerId} />
-        <IngredientsGuide state={state} />
-        <TrackReference />
-        <RecipeReference state={state} />
-        <CardCatalog state={state} />
-        <details>
-          <summary>Schemes</summary>
-          {Object.entries(SCHEME_INFO)
-            .sort(([, a], [, b]) => a.name.localeCompare(b.name))
-            .map(([id, info]) => (
-            <div key={id} className="tiny light">
-              <b>{info.name}</b> ({info.playCost}) — {info.text}
-            </div>
-          ))}
-        </details>
-        <details>
-          <summary>Masteries</summary>
-          {Object.values(MASTERY_INFO).map((m) => (
-            <div key={m.name} className="tiny light">
-              <b>{m.name}</b> — {m.text}
-            </div>
-          ))}
-        </details>
-      </div>
+      <RecipeProgress state={state} viewerId={viewerId} />
     </aside>
   )
 }
@@ -2146,6 +2306,7 @@ export default function App() {
     return code ? readCachedRoom(code)?.you ?? '' : ''
   })
   const [roomErr, setRoomErr] = useState('')
+  const [showHelp, setShowHelp] = useState(false)
   const roomSend = useRef<((msg: ClientMessage) => void) | null>(null)
 
   useEffect(() => {
@@ -2223,15 +2384,8 @@ export default function App() {
         />
         <HowToPlay />
         <div className="setup panel" style={{ marginTop: '1rem' }}>
-          <DevIncomeEditor state={liveState} send={send} />
-          <DevCostEditor state={liveState} send={send} />
-          <div className="ref" style={{ marginTop: '0.6rem' }}>
-            <RecipeProgress state={liveState} viewerId={selfId} />
-            <IngredientsGuide state={liveState} />
-            <TrackReference />
-            <RecipeReference state={liveState} />
-            <CardCatalog state={liveState} />
-          </div>
+          <RecipeProgress state={liveState} viewerId={selfId} />
+          <ReferenceTools state={liveState} send={send} />
         </div>
       </div>
     )
@@ -2266,55 +2420,57 @@ export default function App() {
         />
         <HowToPlay />
         <div className="setup panel" style={{ marginTop: '1rem' }}>
-          <DevIncomeEditor state={liveState} send={send} />
-          <DevCostEditor state={liveState} send={send} />
-          <div className="ref" style={{ marginTop: '0.6rem' }}>
-            <RecipeProgress state={liveState} />
-            <IngredientsGuide state={liveState} />
-            <TrackReference />
-            <RecipeReference state={liveState} />
-            <CardCatalog state={liveState} />
-          </div>
+          <RecipeProgress state={liveState} />
+          <ReferenceTools state={liveState} send={send} />
         </div>
       </div>
     )
   }
 
   return (
-    <div className="app" data-testid="game-root" data-phase={liveState.phase}>
-      <CallForBidBanner state={liveState} />
-      <PlayerRail state={viewState} selfId={viewerId} />
-      <main className="main">
-        {online && roomCode && (
-          <p className="tiny light">
-            Room {roomCode}
-            {selfId ? ` · you are ${playerById(liveState, selfId).name}` : ''}
-          </p>
-        )}
-        <PhaseView
-          key={`${online ? selfId ?? 'online' : viewingPlayerId(liveState) ?? 'hotseat'}:${liveState.phase}:${liveState.bidRound}`}
-          state={viewState}
-          send={send}
-          selfId={selfId}
-          online={online}
-        />
-        <OwnHandDock state={viewState} viewerId={viewerId} />
-        {incomeHint && liveState.phase !== 'game_over' && (
-          <p className="tiny light" style={{ marginTop: '0.8rem' }}>
-            Current production if paid now:{' '}
-            {liveState.players.map((p) => `${p.name} ${money(incomeHint[p.id] ?? 0)}`).join(' · ')}
-          </p>
-        )}
-        {viewState.players.length > 0 && (
-          <ScoreBoard state={viewState} hideTable={liveState.phase === 'game_over'} />
-        )}
-      </main>
-      <LogRail
+    <div>
+      <TitleBanner
         state={viewState}
         onReset={() => send({ type: 'NEW_GAME' })}
-        send={send}
-        viewerId={viewerId}
+        onHelp={() => setShowHelp(true)}
       />
+      <div className="app" data-testid="game-root" data-phase={liveState.phase}>
+        <PlayerRail state={viewState} selfId={viewerId} />
+        <CallForBidBanner state={liveState} />
+        <main className="main">
+          {online && roomCode && (
+            <p className="tiny light">
+              Room {roomCode}
+              {selfId ? ` · you are ${playerById(liveState, selfId).name}` : ''}
+            </p>
+          )}
+          <PhaseView
+            key={`${online ? selfId ?? 'online' : viewingPlayerId(liveState) ?? 'hotseat'}:${liveState.phase}:${liveState.bidRound}`}
+            state={viewState}
+            send={send}
+            selfId={selfId}
+            online={online}
+          />
+          <OwnHandDock state={viewState} viewerId={viewerId} />
+          {incomeHint && liveState.phase !== 'game_over' && (
+            <p className="tiny light" style={{ marginTop: '0.8rem' }}>
+              Current production if paid now:{' '}
+              {liveState.players.map((p) => `${p.name} ${money(incomeHint[p.id] ?? 0)}`).join(' · ')}
+            </p>
+          )}
+          {viewState.players.length > 0 && (
+            <ScoreBoard state={viewState} hideTable={liveState.phase === 'game_over'} />
+          )}
+        </main>
+        <LogRail
+          state={viewState}
+          send={send}
+          viewerId={viewerId}
+        />
+      </div>
+      {showHelp && (
+        <HelpModal state={liveState} send={send} onClose={() => setShowHelp(false)} />
+      )}
     </div>
   )
 }

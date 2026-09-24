@@ -814,14 +814,10 @@ function maybeCallForBid(state: GameState, player: Player): Action | null {
   const bestOther = Math.max(0, ...others)
   // Only worth burning the one-time call with a real cash edge over the table,
   // since a fresh bid is likely to favor whoever can outspend everyone else.
-  console.log(`[bot] ${player.name} considering call-for-bid with cash ${player.cash} vs best other ${bestOther}`)
   if (player.cash < bestOther * 0.5) return null
   const { style } = botLens(state, player)
-  console.log(`[bot] ${player.name} considering call-for-bid with cash ${player.cash} vs best other ${bestOther}, style.bid=${style.bid}`)
   const rand = botRng(state, player, 'call_for_bid')()
-  console.log(`[bot] ${player.name} considering call-for-bid with cash ${player.cash} vs best other ${bestOther}, style.bid=${style.bid}, rand=${rand}`)
   const chance = 0.35 * style.bid
-  console.log(`[bot] ${player.name} considering call-for-bid with cash ${player.cash} vs best other ${bestOther}, style.bid=${style.bid}, rand=${rand}, chance=${chance}`)
   if (rand > chance) return null
   return { type: 'CALL_FOR_BID', actorId: player.id }
 }
